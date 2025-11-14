@@ -25,46 +25,76 @@ class ItemUpdater:
 
 
 class StandardItemUpdater(ItemUpdater):
-    """Handles updates for all items using the original complex logic"""
+    """Handles updates for standard items (not Aged Brie, Backstage passes, or Sulfuras)"""
     
     def update(self, item):
-        # First phase: handle quality changes before sell_in update
-        if item.name != "Aged Brie" and item.name != "Backstage passes to a TAFKAL80ETC concert":
-            if item.quality > 0:
-                if item.name != "Sulfuras, Hand of Ragnaros":
-                    self.decrease_quality(item, 1)
-        else:
-            if item.quality < 50:
-                self.increase_quality(item, 1)
-                if item.name == "Backstage passes to a TAFKAL80ETC concert":
-                    if item.sell_in < 11:
-                        if item.quality < 50:
-                            self.increase_quality(item, 1)
-                    if item.sell_in < 6:
-                        if item.quality < 50:
-                            self.increase_quality(item, 1)
+        # Decrease quality by 1 before sell date
+        self.decrease_quality(item, 1)
         
         # Update sell_in
-        if item.name != "Sulfuras, Hand of Ragnaros":
-            self.decrease_sell_in(item, 1)
+        self.decrease_sell_in(item, 1)
         
-        # Second phase: handle quality changes after sell_in update (after sell date)
+        # After sell date, decrease quality by 1 more (total 2 per day)
         if item.sell_in < 0:
-            if item.name != "Aged Brie":
-                if item.name != "Backstage passes to a TAFKAL80ETC concert":
-                    if item.quality > 0:
-                        if item.name != "Sulfuras, Hand of Ragnaros":
-                            self.decrease_quality(item, 1)
-                else:
-                    self.set_quality_to_zero(item)
-            else:
-                if item.quality < 50:
-                    self.increase_quality(item, 1)
+            self.decrease_quality(item, 1)
+
+
+class AgedBrieUpdater(ItemUpdater):
+    """Handles updates for Aged Brie items"""
+    
+    def update(self, item):
+        # Increase quality by 1 before sell date
+        self.increase_quality(item, 1)
+        
+        # Update sell_in
+        self.decrease_sell_in(item, 1)
+        
+        # After sell date, increase quality by 1 more (total 2 per day)
+        if item.sell_in < 0:
+            self.increase_quality(item, 1)
+
+
+class BackstagePassUpdater(ItemUpdater):
+    """Handles updates for Backstage passes"""
+    
+    def update(self, item):
+        # Always increase by 1 first
+        self.increase_quality(item, 1)
+        
+        # Extra +1 when sell_in < 11 (10 days or less)
+        if item.sell_in < 11:
+            self.increase_quality(item, 1)
+        
+        # Another +1 when sell_in < 6 (5 days or less)
+        if item.sell_in < 6:
+            self.increase_quality(item, 1)
+        
+        # Update sell_in
+        self.decrease_sell_in(item, 1)
+        
+        # After concert (sell_in < 0 after decrement), quality drops to 0
+        if item.sell_in < 0:
+            self.set_quality_to_zero(item)
+
+
+class SulfurasUpdater(ItemUpdater):
+    """Handles updates for Sulfuras items"""
+    
+    def update(self, item):
+        # Sulfuras never changes - do nothing
+        pass
 
 
 def get_updater_for(item):
     """Return the appropriate updater for the given item"""
-    return StandardItemUpdater()
+    if item.name == "Aged Brie":
+        return AgedBrieUpdater()
+    elif item.name.startswith("Backstage passes"):
+        return BackstagePassUpdater()
+    elif item.name.startswith("Sulfuras"):
+        return SulfurasUpdater()
+    else:
+        return StandardItemUpdater()
 
 
 class GildedRose(object):
