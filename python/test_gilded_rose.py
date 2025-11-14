@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 
 from gilded_rose import Item, GildedRose
@@ -183,6 +184,69 @@ class GildedRoseTest(unittest.TestCase):
         # Sulfuras
         self.assertEqual(5, items[2].sell_in)
         self.assertEqual(80, items[2].quality)
+
+    # Conjured Item Tests
+    def test_conjured_item_before_sell_date_decreases_quality_by_two(self):
+        """Conjured item before sell date should decrease quality by 2"""
+        items = [Item("Conjured Mana Cake", 5, 10)]
+        gilded_rose = GildedRose(items)
+        gilded_rose.update_quality()
+        self.assertEqual(4, items[0].sell_in)
+        self.assertEqual(8, items[0].quality)
+    
+    def test_conjured_item_after_sell_date_decreases_quality_by_four(self):
+        """Conjured item after sell date should decrease quality by 4"""
+        items = [Item("Conjured Mana Cake", 0, 10)]
+        gilded_rose = GildedRose(items)
+        gilded_rose.update_quality()
+        self.assertEqual(-1, items[0].sell_in)
+        self.assertEqual(6, items[0].quality)
+    
+    def test_conjured_item_quality_never_goes_negative(self):
+        """Conjured item quality should never go below 0"""
+        items = [Item("Conjured Mana Cake", 5, 1)]
+        gilded_rose = GildedRose(items)
+        gilded_rose.update_quality()
+        self.assertEqual(4, items[0].sell_in)
+        self.assertEqual(0, items[0].quality)
+    
+    def test_conjured_item_quality_never_goes_negative_after_sell_date(self):
+        """Conjured item quality should never go below 0 even after sell date"""
+        items = [Item("Conjured Mana Cake", 0, 3)]
+        gilded_rose = GildedRose(items)
+        gilded_rose.update_quality()
+        self.assertEqual(-1, items[0].sell_in)
+        self.assertEqual(0, items[0].quality)
+    
+    def test_conjured_item_quality_floor_with_minimal_quality(self):
+        """Conjured item with quality 1 should not go negative after multiple updates"""
+        items = [Item("Conjured Mana Cake", 1, 1)]
+        gilded_rose = GildedRose(items)
+        gilded_rose.update_quality()
+        self.assertEqual(0, items[0].sell_in)
+        self.assertEqual(0, items[0].quality)
+        
+        # Update again to ensure it stays at 0
+        gilded_rose.update_quality()
+        self.assertEqual(-1, items[0].sell_in)
+        self.assertEqual(0, items[0].quality)
+    
+    def test_conjured_item_with_different_name_variations(self):
+        """Conjured items with different names should all degrade twice as fast"""
+        items = [
+            Item("Conjured Sword", 3, 8),
+            Item("Conjured Health Potion", 2, 6)
+        ]
+        gilded_rose = GildedRose(items)
+        gilded_rose.update_quality()
+        
+        # Conjured Sword
+        self.assertEqual(2, items[0].sell_in)
+        self.assertEqual(6, items[0].quality)
+        
+        # Conjured Health Potion
+        self.assertEqual(1, items[1].sell_in)
+        self.assertEqual(4, items[1].quality)
 
 
 if __name__ == '__main__':
