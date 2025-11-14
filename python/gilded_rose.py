@@ -85,6 +85,21 @@ class SulfurasUpdater(ItemUpdater):
         pass
 
 
+class ConjuredItemUpdater(ItemUpdater):
+    """Handles updates for Conjured items that degrade twice as fast"""
+    
+    def update(self, item):
+        # Decrease quality by 2 before sell date
+        self.decrease_quality(item, 2)
+        
+        # Update sell_in
+        self.decrease_sell_in(item, 1)
+        
+        # After sell date, decrease quality by 2 more (total 4 per day)
+        if item.sell_in < 0:
+            self.decrease_quality(item, 2)
+
+
 def get_updater_for(item):
     """Return the appropriate updater for the given item"""
     if item.name == "Aged Brie":
@@ -93,6 +108,8 @@ def get_updater_for(item):
         return BackstagePassUpdater()
     elif item.name.startswith("Sulfuras"):
         return SulfurasUpdater()
+    elif item.name.startswith("Conjured"):
+        return ConjuredItemUpdater()
     else:
         return StandardItemUpdater()
 
